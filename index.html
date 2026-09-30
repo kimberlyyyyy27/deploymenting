@@ -180,6 +180,7 @@
     .option { width:100%;border:1px solid var(--line);background:#fff;border-radius:10px;padding:14px;display:flex;justify-content:space-between;text-align:left; }
     .option.selected { border:2px solid var(--wine);background:#fcf7f8; }
     .checkout-actions { display:flex;justify-content:space-between;gap:10px;margin-top:20px; }
+    .checkout-page{position:fixed;inset:0;background:var(--cream);z-index:75;overflow:auto}.checkout-page-inner{width:min(1180px,calc(100% - 48px));margin:auto;padding:25px 0 60px}.checkout-shell{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden}.checkout-page .checkout-body{max-width:900px;margin:auto}.checkout-top{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid var(--line)}
     .order-card { border:1px solid var(--line);border-radius:12px;padding:15px;margin-bottom:11px; }
     .order-top,.order-bottom { display:flex;justify-content:space-between;align-items:center;font-size:12px; }
     .order-top b { color:#23724c; }
@@ -193,6 +194,7 @@
     .seller-card { border:1px solid var(--line);border-radius:12px;padding:16px; }
     .seller-card strong { font-size:22px;color:var(--wine);display:block;margin-top:5px; }
     .seller-actions { display:flex;gap:10px;flex-wrap:wrap; }
+    .inner-overlay{position:fixed;inset:0;background:#0005;z-index:110;display:grid;place-items:center;padding:20px}.inner-modal{width:min(560px,100%);max-height:92vh;overflow:auto}
     @media(max-width:1100px){ .grid{grid-template-columns:repeat(4,1fr)} .header-main{grid-template-columns:auto 1fr auto}.trust{grid-template-columns:repeat(2,1fr)}.trust-item:nth-child(2){border-right:0}.trust-item:nth-child(-n+2){border-bottom:1px solid var(--line)} }
     @media(max-width:800px){ .container{width:min(100% - 28px,720px)}.header-main{grid-template-columns:auto 1fr}.header-actions{grid-column:1/-1;justify-content:flex-end;padding-bottom:10px}.header-main{padding-top:10px}.search{grid-column:1/-1;grid-row:2}.header-main{padding-bottom:10px}.grid{grid-template-columns:repeat(2,1fr)}.hero{min-height:300px;padding:28px}.sell,.detail{grid-template-columns:1fr}.sell img{height:220px}.detail>img{height:360px;border-radius:18px 18px 0 0}.footer-grid{grid-template-columns:1fr 1fr}.chat-layout{grid-template-columns:1fr}.chat-rooms{display:none}.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}.steps{overflow:auto}.step{min-width:125px}.trust{grid-template-columns:1fr}.trust-item{border-right:0!important;border-bottom:1px solid var(--line)}.trust-item:last-child{border-bottom:0} }
     @media(max-width:520px){.grid{gap:10px}.product-body{padding:10px}.quick-add{width:calc(100% - 20px);margin:0 10px 10px}.hero h1{font-size:36px}.footer-grid{grid-template-columns:1fr}.copyright{display:block}.copyright span{display:block;margin:5px 0}.header-actions .auth-btn{padding:7px}.sell-copy{padding:28px}.modal{max-height:96vh}.backdrop{padding:10px}}
@@ -200,7 +202,55 @@
 </head>
 
 <body>
+<!--
+  Preview-safe startup shell:
+  This sits OUTSIDE the React root so React cannot erase it if a runtime error occurs.
+  It is hidden only after the React app successfully mounts.
+-->
+<div id="preview-shell">
+  <div id="startup-fallback" style="min-height:100vh;background:#f5f1ec;color:#211b1d;font-family:Arial,sans-serif;">
+    <header style="background:#fff;border-bottom:1px solid #e7dfe0;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;">
+      <strong style="font-size:24px;color:#4a1420;letter-spacing:-1px;">RE<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#4a1420;margin:0 3px 2px;"></span>WEAR</strong>
+      <div style="flex:1;max-width:620px;height:42px;border:1px solid #ddd5d6;border-radius:10px;background:#faf8f7;color:#8a8082;padding:11px 15px;">Cari baju, tas, sepatu preloved...</div>
+      <span style="font-size:13px;color:#766d70;">Marketplace Preloved</span>
+    </header>
+    <main style="max-width:1400px;margin:0 auto;padding:42px 28px;">
+      <section style="background:#4a1420;color:#fff;border-radius:18px;padding:48px;min-height:260px;display:flex;align-items:center;">
+        <div>
+          <div style="display:inline-block;background:#bee3ef;color:#4a1420;border-radius:999px;padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:1px;">PRELOVED TERPERCAYA</div>
+          <h1 style="font-size:48px;line-height:1.05;margin:18px 0 10px;">Fashion branded,<br>harga bersahabat.</h1>
+          <p style="margin:0;opacity:.9;">Diskon hingga 80% dari harga asli</p>
+        </div>
+      </section>
+      <section style="margin-top:24px;background:#fff;border:1px solid #e7dfe0;border-radius:16px;padding:22px;">
+        <h2 style="margin:0 0 8px;color:#4a1420;">REWEAR Preloved Fashion Marketplace</h2>
+        <p style="margin:0;color:#766d70;line-height:1.6;">Loading the interactive marketplace...</p>
+        <div style="margin-top:18px;height:10px;border-radius:99px;background:#eee7e7;overflow:hidden;"><div style="width:55%;height:100%;background:#bee3ef;border-radius:99px;"></div></div>
+      </section>
+    </main>
+  </div>
+</div>
 <div id="root"></div>
+
+<script>
+  // Keep the static shell visible if React/Babel/CDN startup fails.
+  window.__rewearReactStarted = false;
+  window.addEventListener('error', function() {
+    if (!window.__rewearReactStarted) {
+      var shell = document.getElementById('preview-shell');
+      if (shell) shell.style.display = 'block';
+      var msg = document.getElementById('preview-error');
+      if (!msg) {
+        msg = document.createElement('p');
+        msg.id = 'preview-error';
+        msg.style.cssText = 'margin:16px 0 0;padding:12px;border-radius:8px;background:#fff4d8;color:#684d12;font-size:13px;';
+        msg.textContent = 'Interactive mode could not start in this preview. The static REWEAR preview is still available.';
+        var main = shell && shell.querySelector('main');
+        if (main) main.appendChild(msg);
+      }
+    }
+  });
+</script>
 
 <script type="text/babel">
 const { useCallback, useEffect, useMemo, useRef, useState } = React;
@@ -218,8 +268,7 @@ const images = {
   trench:'https://assets.preloved.co.id/products/1222753/9ce25ee7-ccf9-41db-a6df-ce46f20a9287.jpg',
   knit:'https://di2ponv0v5otv.cloudfront.net/posts/2026/09/01/6a97a328fa43c1da53c748d6/s_6a97a329ebb1a50d35c6b9a4.jpg',
   dress:'https://di2ponv0v5otv.cloudfront.net/posts/2024/03/20/65fb2054fb7304c3011632df/l_65fb206c02760b4bf41973cf.jpg',
-  HandBag:'https://i.ebayimg.com/images/g/VeYAAeSwhoBqnsnU/s-l1600.webp',
-  Bucket:'https://static.mercdn.net/item/detail/orig/photos/m44840443427_1.jpg?1776395786',
+  bag:'https://static.mercdn.net/item/detail/orig/photos/m44840443427_1.jpg?1776395786',
   pants:'https://di2ponv0v5otv.cloudfront.net/posts/2026/08/24/6a8cde24253621ae54424419/s_6a8cde264985e889561eeff0.jpeg',
   denim:'https://static.mercdn.net/item/detail/orig/photos/m47100205242_1.jpg?1779710117',
   floral:'https://i.ebayimg.com/images/g/pcwAAeSw2Adqaj4R/s-l1600.jpg',
@@ -231,13 +280,13 @@ const seedProducts = [
   {id:1,brand:'Massimo Dutti',storeName:'Default Preloved Store',name:'Wool Trench Coat',category:'Outer',price:680000,originalPrice:2800000,size:'M',condition:'Like New',location:'Jakarta Selatan',viewed:12,ribbon:'Terlaris',stock:1,material:'Wool blend',measurements:'Panjang 108 cm · Dada 104 cm',sellerRating:4.9,sold:38,photos:[images.trench,images.trench],isFlashSale:true},
   {id:2,brand:'& Other Stories',storeName:'Default Preloved Store',name:'Ribbed Knit Cardigan',category:'Atasan',price:340000,originalPrice:1190000,size:'S',condition:'Like New',location:'Bandung',viewed:28,ribbon:'Populer',stock:1,material:'Cotton knit',measurements:'Panjang 57 cm · Dada 88 cm',sellerRating:4.8,sold:24,photos:[images.knit,images.knit],isFlashSale:true},
   {id:3,brand:'Sandro',storeName:'Default Preloved Store',name:'Silk Midi Dress',category:'Dress',price:890000,originalPrice:3400000,size:'XS',condition:'Very Good',location:'Surabaya',viewed:5,stock:1,material:'100% Silk',measurements:'Panjang 118 cm · Dada 82 cm',sellerRating:4.9,sold:12,photos:[images.dress,images.dress],isFlashSale:true},
-  {id:4,brand:'A.P.C.',storeName:'Default Preloved Store',name:'Leather Bucket Bag',category:'Tas',price:1120000,originalPrice:4200000,size:'One Size',condition:'Very Good',location:'Jakarta Pusat',viewed:3,ribbon:'Hot Offer',stock:1,material:'Leather',measurements:'23 × 20 × 13 cm',sellerRating:4.7,sold:9,photos:[images.Bucket,images.Bucket],isFlashSale:true},
+  {id:4,brand:'A.P.C.',storeName:'Default Preloved Store',name:'Leather Bucket Bag',category:'Tas',price:1120000,originalPrice:4200000,size:'One Size',condition:'Very Good',location:'Jakarta Pusat',viewed:3,ribbon:'Hot Offer',stock:1,material:'Leather',measurements:'23 × 20 × 13 cm',sellerRating:4.7,sold:9,photos:[images.bag,images.bag],isFlashSale:true},
   {id:5,brand:'COS',storeName:'Default Preloved Store',name:'Linen Wide-Leg Pants',category:'Bawahan',price:420000,originalPrice:1350000,size:'L',condition:'Good',location:'Yogyakarta',viewed:9,stock:1,material:'Linen',measurements:'Panjang 103 cm · Pinggang 78 cm',sellerRating:4.8,sold:18,photos:[images.pants,images.pants]},
   {id:6,brand:'Uniqlo',storeName:'Default Preloved Store',name:'Cashmere Turtleneck',category:'Atasan',price:155000,originalPrice:890000,size:'M',condition:'Like New',location:'Medan',viewed:17,ribbon:'Baru',stock:1,material:'Cashmere blend',measurements:'Panjang 63 cm · Dada 98 cm',sellerRating:4.6,sold:15,photos:[images.cashmere,images.cashmere]},
   {id:7,brand:"Levi's",storeName:'Default Preloved Store',name:'Denim Jacket',category:'Outer',price:450000,originalPrice:1650000,size:'M',condition:'Good',location:'Bandung',viewed:22,ribbon:'Terlaris',stock:1,material:'Denim',measurements:'Panjang 66 cm · Dada 102 cm',sellerRating:4.9,sold:41,photos:[images.denim,images.denim]},
   {id:8,brand:'Zara',storeName:'Default Preloved Store',name:'Floral Wrap Dress',category:'Dress',price:290000,originalPrice:980000,size:'S',condition:'Very Good',location:'Semarang',viewed:14,stock:1,material:'Viscose',measurements:'Panjang 113 cm · Dada 86 cm',sellerRating:4.7,sold:21,photos:[images.floral,images.floral]},
   {id:9,brand:'H&M',storeName:'Default Preloved Store',name:'Striped Linen Shirt',category:'Atasan',price:180000,originalPrice:590000,size:'L',condition:'Like New',location:'Jakarta Barat',viewed:31,ribbon:'Murah',stock:1,material:'Linen blend',measurements:'Panjang 71 cm · Dada 110 cm',sellerRating:4.8,sold:27,photos:[images.linen,images.linen]},
-  {id:10,brand:'Toteme',storeName:'Default Preloved Store',name:'Black Leather Tote Bag ',category:'Tas',price:380000,originalPrice:1450000,size:'One Size',condition:'Like New',location:'Denpasar',viewed:7,stock:1,material:'Leather',measurements:'38 × 31 × 12 cm',sellerRating:4.9,sold:14,photos:[images.HandBag,images.HandBag]}
+  {id:10,brand:'Toteme',storeName:'Default Preloved Store',name:'Canvas Tote Bag',category:'Tas',price:380000,originalPrice:1450000,size:'One Size',condition:'Like New',location:'Denpasar',viewed:7,stock:1,material:'Canvas',measurements:'38 × 31 × 12 cm',sellerRating:4.9,sold:14,photos:[images.bag,images.bag]}
 ];
 
 const api = {
@@ -296,6 +345,7 @@ function ModalTitle({title,onClose}) {
 function Toast({message}) {
   return message ? <div className="toast"><Icon name="Check" size={16}/>{message}</div> : null;
 }
+function Countdown({minutes=5,seconds=32}) { const [left,setLeft]=useState(minutes*60+seconds); useEffect(()=>{const id=window.setInterval(()=>setLeft(v=>v>0?v-1:minutes*60+seconds),1000);return()=>window.clearInterval(id)},[minutes,seconds]); const m=String(Math.floor(left/60)).padStart(2,'0'),s=String(left%60).padStart(2,'0'); return <div className="countdown"><span>Berakhir dalam</span><span className="timebox">{m}</span>:<span className="timebox">{s}</span></div>}
 function SkeletonGrid() {
   return <div className="grid">{Array.from({length:5}).map((_,i)=><div className="product" key={i}>
     <div className="image-wrap skeleton"/><div className="product-body"><div className="skeleton" style={{height:10,width:'35%'}}/><div className="skeleton" style={{height:18,width:'75%',marginTop:8}}/><div className="skeleton" style={{height:15,width:'48%',marginTop:12}}/></div>
@@ -305,11 +355,11 @@ function SkeletonGrid() {
 /* =========================================================
    HEADER + NAV
    ========================================================= */
-function Header({user,cartCount,chatUnread,search,setSearch,onOpenCart,onOpenChat,onOpenAuth,onOpenOrders,onOpenSeller,onLogout}) {
+function Header({user,cartCount,chatUnread,search,setSearch,onOpenCart,onOpenChat,onOpenAuth,onOpenOrders,onOpenSeller,onLogout,onNavigate}) {
   const [profileOpen,setProfileOpen] = useState(false);
   return <header className="header">
     <div className="container header-main">
-      <button className="logo" onClick={()=>window.scrollTo({top:0,behavior:'smooth'})}>RE<span/>WEAR</button>
+      <button className="logo" onClick={()=>onNavigate('top')}>RE<span/>WEAR</button>
       <label className="search"><Icon name="Search" size={17}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari baju, tas, sepatu preloved..."/><Icon name="SlidersHorizontal" size={16}/></label>
       <div className="header-actions">
         <button className="icon-btn" aria-label="Keranjang" onClick={onOpenCart}><Icon name="ShoppingCart"/>{cartCount>0&&<b className="badge">{cartCount}</b>}</button>
@@ -326,7 +376,7 @@ function Header({user,cartCount,chatUnread,search,setSearch,onOpenCart,onOpenCha
     </div>
     <nav className="secondary-nav"><div className="container secondary-nav-inner">
       <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#81777a'}}><Icon name="MapPin" size={13}/>Kirim ke <b>Jakarta Selatan</b></span>
-      {['Flash Sale','Baru Masuk','Wanita','Pria','Tas','Sepatu'].map(x=><button key={x} onClick={()=>x==='Flash Sale'?document.getElementById('flash-sale')?.scrollIntoView({behavior:'smooth'}):window.scrollTo({top:document.getElementById('products')?.offsetTop||0,behavior:'smooth'})}>{x}{x==='Flash Sale'?' ⚡':''}</button>)}
+      {['Flash Sale','Baru Masuk','Wanita','Pria','Tas','Sepatu'].map(x=><button key={x} onClick={()=>onNavigate(x==='Flash Sale'?'flash':'products')}>{x}{x==='Flash Sale'?' ⚡':''}</button>)}
       <button onClick={onOpenSeller} style={{marginLeft:'auto',fontWeight:800,color:'var(--wine)'}}>Buka Toko</button>
     </div></nav>
   </header>
@@ -355,14 +405,14 @@ function ProductCard({product,favorite,onFavorite,onAdd,onOpen,onStore,flash=fal
       <small>{product.viewed} dilihat · {product.sold} terjual · ★ {product.sellerRating}</small>
     </div>
     <button className="quick-add" disabled={sold} onClick={()=>onAdd(product)}>{sold?<><Icon name="Ban" size={14}/> Sold Out</>:<><Icon name="Plus" size={14}/> Keranjang</>}</button>
-    {flash&&<div style={{padding:'0 13px 13px'}}><div className="countdown"><span className="timebox">05</span>:<span className="timebox">32</span>:<span className="timebox">18</span><span>tersisa</span></div></div>}
+    {flash&&<div style={{padding:'0 13px 13px'}}><Countdown/></div>}
   </article>
 }
 
 /* =========================================================
    AUTH
    ========================================================= */
-function AuthModal({sellerMode,setSellerMode,mode,setMode,onClose,onLogin}) {
+function AuthModal({sellerMode,setSellerMode,mode,setMode,onClose,onLogin,notice}) {
   const [name,setName]=useState('');
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
@@ -372,7 +422,7 @@ function AuthModal({sellerMode,setSellerMode,mode,setMode,onClose,onLogin}) {
     const cleanEmail=email.trim().toLowerCase();
     onLogin({name:name.trim()|| (sellerMode?'Seller Rewear':'Sahabat Rewear'),email:cleanEmail||'demo@rewear.id',role:sellerMode?'seller':'buyer'});
   };
-  const googleLogin=()=>onLogin({name:sellerMode?'Google Seller':'Google User',email:sellerMode?'google.seller@demo.com':'google.user@demo.com',role:sellerMode?'seller':'buyer'});
+  const googleLogin=()=>{const clean=email.trim().toLowerCase();if(!clean){setEmail('');return;}onLogin({name:name.trim()||clean.split('@')[0],email:clean,role:sellerMode?'seller':'buyer',provider:'google-demo'});};
 
   return <ModalShell onClose={onClose}><div className="auth">
     <div className="auth-head"><strong className="auth-brand">RE<span style={{fontSize:8}}>●</span>WEAR</strong><button className="close" onClick={onClose}><Icon name="X"/></button></div>
@@ -382,7 +432,7 @@ function AuthModal({sellerMode,setSellerMode,mode,setMode,onClose,onLogin}) {
       <button className={sellerMode?'active':''} onClick={()=>{setSellerMode(true);setMode('login')}}>Jadi Seller</button>
     </div>
     <form className="form" onSubmit={submit}>
-      <div><h2 style={{margin:'0 0 5px'}}>{sellerMode?'Akses Seller Rewear':mode==='login'?'Selamat datang kembali':'Buat akun Rewear'}</h2><span className="muted">{sellerMode?'Kelola toko dan produk kamu.':'Belanja preloved tanpa ribet.'}</span></div>
+      {notice&&<div style={{padding:10,background:'#fff4d8',borderRadius:8,fontSize:12}}>{notice}</div>}<div><h2 style={{margin:'0 0 5px'}}>{sellerMode?'Akses Seller Rewear':mode==='login'?'Selamat datang kembali':'Buat akun Rewear'}</h2><span className="muted">{sellerMode?'Kelola toko dan produk kamu.':'Belanja preloved tanpa ribet.'}</span></div>
       {mode==='register'&&<input required value={name} onChange={e=>setName(e.target.value)} placeholder={sellerMode?'Nama toko / pemilik':'Nama lengkap'}/>}
       <input required type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email"/>
       <input required type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password"/>
@@ -440,7 +490,7 @@ function CheckoutPage({cart,subtotal,onPlaceOrder,onBack}) {
   const update=k=>e=>setAddress(a=>({...a,[k]:e.target.value}));
   const place=()=>onPlaceOrder({shipping,payment,address});
 
-  return <ModalShell onClose={onBack} xwide><ModalTitle title="Checkout Rewear" onClose={onBack}/>
+  return <div className="checkout-page"><div className="checkout-page-inner"><div className="checkout-shell"><div className="checkout-top"><div><b style={{color:'var(--wine)',fontSize:20}}>REWEAR</b><h2 style={{margin:'4px 0 0'}}>Checkout</h2></div><button className="btn secondary" onClick={onBack}><Icon name="X" size={15}/> Tutup</button></div>
     <div className="steps">{['Alamat Pengiriman','Pengiriman','Pembayaran','Ringkasan'].map((x,i)=><div className={`step ${step===i+1?'active':''} ${step>i+1?'done':''}`} key={x}><span>{step>i+1?<Icon name="Check" size={13}/>:i+1}</span>{x}</div>)}</div>
     <div className="checkout-body">
       {step===1&&<div className="form-grid">
@@ -454,8 +504,7 @@ function CheckoutPage({cart,subtotal,onPlaceOrder,onBack}) {
       {step===3&&<div className="options"><h3>Pilih metode pembayaran</h3>{['Transfer Bank','E-Wallet','COD'].map(x=><button className={`option ${payment===x?'selected':''}`} key={x} onClick={()=>setPayment(x)}><span>○ {x}</span><b>{x==='COD'?'Bayar saat sampai':'Gratis'}</b></button>)}</div>}
       {step===4&&<div><div style={{padding:13,background:'#f3f8f9',borderRadius:10,marginBottom:16,fontSize:12}}>✨ Ini simulasi checkout untuk demo. Tidak ada pembayaran nyata.</div>{cart.map(x=><div key={x.product.id} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',fontSize:13}}><span>{x.product.name} × {x.quantity}</span><b>{formatPrice(x.product.price*x.quantity)}</b></div>)}<div style={{marginTop:14,paddingTop:14,borderTop:'1px solid var(--line)',fontSize:13}}><b>{address.name}</b><br/>{address.detail}, {address.city} {address.postal}<br/><br/>Pengiriman: {shipping===15000?'Reguler 3–5 hari':'Express 1–2 hari'}<br/>Pembayaran: {payment}</div><Summary subtotal={subtotal} shipping={shipping}/></div>}
       <div className="checkout-actions">{step>1?<Button variant="secondary" onClick={()=>setStep(step-1)}><Icon name="ArrowLeft" size={15}/>Kembali</Button>:<span/>}{step<4?<Button disabled={step===1&&!valid} onClick={()=>setStep(step+1)}>Lanjut<Icon name="ArrowRight" size={15}/></Button>:<Button onClick={place}>Buat Pesanan<Icon name="Check" size={15}/></Button>}</div>
-    </div>
-  </ModalShell>
+    </div></div></div></div>
 }
 
 /* =========================================================
@@ -483,20 +532,25 @@ function ChatModal({rooms,setRooms,onClose,onRead}) {
 /* =========================================================
    SELLER MODE
    ========================================================= */
-function SellerDashboard({products,user,onClose,onAddProduct,onEditProduct}) {
-  const sellerProducts=products.filter(p=>p.storeName.toLowerCase().includes((user?.name||'').toLowerCase())||p.storeName==='Default Preloved Store');
+function SellerDashboard({products,user,onClose,onSaveProduct}) {
+  const sellerName=user?.name||'Seller Rewear';
+  const sellerStore=user?.storeName||sellerName;
+  const sellerProducts=products.filter(p=>p.storeName===sellerStore);
   const [editing,setEditing]=useState(null);
-  const [draft,setDraft]=useState({name:'',price:'',category:'Atasan',stock:1});
-  const save=()=>{onAddProduct({...draft,id:Date.now(),price:Number(draft.price)||0,originalPrice:Number(draft.price)||0,brand:user?.name||'Seller',storeName:user?.name||'Toko Rewear',condition:'Like New',location:'Jakarta Selatan',viewed:0,sold:0,sellerRating:5,material:'Belum diisi',measurements:'Belum diisi',photos:[images.floral],ribbon:'Baru'});setEditing(null);setDraft({name:'',price:'',category:'Atasan',stock:1});};
+  const blank={name:'',price:'',category:'Atasan',stock:1,brand:'',condition:'Like New',material:'',measurements:'',location:'Jakarta Selatan',originalPrice:''};
+  const [draft,setDraft]=useState(blank);
+  const openNew=()=>{setDraft({...blank,brand:sellerName,location:'Jakarta Selatan'});setEditing('new')};
+  const openEdit=p=>{setDraft({...p,price:String(p.price),originalPrice:String(p.originalPrice),stock:Math.min(1,p.stock||1)});setEditing(p.id)};
+  const save=e=>{e.preventDefault();if(!draft.name.trim()||!draft.price)return;
+    onSaveProduct({...draft,id:editing==='new'?`seller-${Date.now()}`:editing,price:Number(draft.price),originalPrice:Number(draft.originalPrice||draft.price),stock:1,isSold:false,brand:draft.brand||sellerName,storeName:sellerStore,condition:draft.condition||'Like New',location:draft.location||'Jakarta Selatan',viewed:0,sold:editing==='new'?0:(products.find(p=>p.id===editing)?.sold||0),sellerRating:5,material:draft.material||'Belum diisi',measurements:draft.measurements||'Belum diisi',photos:[images.floral],ribbon:'Baru'});setEditing(null);};
   return <ModalShell onClose={onClose} xwide><ModalTitle title="Seller Mode" onClose={onClose}/><div className="seller-dashboard">
-    <span className="eyebrow blue">TOKO KAMU</span><h2 style={{margin:'8px 0 0'}}>{user?.name||'Seller Rewear'}</h2>
-    <div className="seller-cards"><div className="seller-card">Produk Aktif<strong>{sellerProducts.length}</strong></div><div className="seller-card">Terjual<strong>{sellerProducts.reduce((s,p)=>s+p.sold,0)}</strong></div><div className="seller-card">Estimasi Penjualan<strong>{formatPrice(sellerProducts.reduce((s,p)=>s+p.price*p.sold,0))}</strong></div></div>
-    <div className="seller-actions"><Button onClick={()=>setEditing({new:true})}><Icon name="Plus"/>Upload Produk</Button><Button variant="secondary">Lihat Penjualan</Button><Button variant="secondary">Kelola Toko</Button></div>
-    <div style={{marginTop:25}}><h3>Produk</h3>{sellerProducts.map(p=><div key={p.id} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 0',borderBottom:'1px solid var(--line)'}}><img src={p.photos[0]} style={{width:48,height:58,objectFit:'cover',borderRadius:6}}/><span style={{flex:1}}><b>{p.name}</b><small style={{display:'block',color:'#888'}}>{formatPrice(p.price)} · stok {p.stock}</small></span><Button variant="secondary" onClick={()=>onEditProduct(p)}>Edit</Button></div>)}</div>
-    {editing&&<div style={{position:'fixed',inset:0,background:'#0005',zIndex:100,display:'grid',placeItems:'center',padding:20}}><div className="modal" style={{padding:24,width:'min(520px,100%)'}}><ModalTitle title="Upload Produk" onClose={()=>setEditing(null)}/><div className="form"><input placeholder="Nama produk" value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/><input type="number" placeholder="Harga" value={draft.price} onChange={e=>setDraft({...draft,price:e.target.value})}/><select value={draft.category} onChange={e=>setDraft({...draft,category:e.target.value})}>{categories.slice(1,6).map(c=><option key={c}>{c}</option>)}</select><input type="number" min="1" max="1" value={draft.stock} readOnly/><Button onClick={save}>Simpan Produk</Button></div></div></div>}
+    <span className="eyebrow blue">TOKO KAMU</span><h2 style={{margin:'8px 0 0'}}>{sellerStore}</h2>
+    <div className="seller-cards"><div className="seller-card">Produk Aktif<strong>{sellerProducts.filter(p=>p.stock>0).length}</strong></div><div className="seller-card">Terjual<strong>{sellerProducts.reduce((s,p)=>s+p.sold,0)}</strong></div><div className="seller-card">Estimasi Penjualan<strong>{formatPrice(sellerProducts.reduce((s,p)=>s+p.price*p.sold,0))}</strong></div></div>
+    <div className="seller-actions"><Button onClick={openNew}><Icon name="Plus"/>Upload Produk</Button><Button variant="secondary">Lihat Penjualan</Button><Button variant="secondary">Kelola Toko</Button></div>
+    <div style={{marginTop:25}}><h3>Produk</h3>{sellerProducts.length===0?<div className="empty"><p>Belum ada produk. Upload produk pertama kamu.</p></div>:sellerProducts.map(p=><div key={p.id} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 0',borderBottom:'1px solid var(--line)'}}><img src={p.photos[0]} style={{width:48,height:58,objectFit:'cover',borderRadius:6}}/><span style={{flex:1}}><b>{p.name}</b><small style={{display:'block',color:'#888'}}>{formatPrice(p.price)} · {p.stock>0?'stok 1':'Sold Out'}</small></span><Button variant="secondary" onClick={()=>openEdit(p)}>Edit</Button></div>)}</div>
+    {editing&&<div className="inner-overlay"><div className="modal inner-modal"><ModalTitle title={editing==='new'?'Upload Produk':'Edit Produk'} onClose={()=>setEditing(null)}/><form className="form" onSubmit={save}><input required placeholder="Nama produk" value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/><input placeholder="Brand" value={draft.brand} onChange={e=>setDraft({...draft,brand:e.target.value})}/><div className="form-grid"><label>Harga<input required type="number" min="0" value={draft.price} onChange={e=>setDraft({...draft,price:e.target.value})}/></label><label>Harga asli<input type="number" min="0" value={draft.originalPrice} onChange={e=>setDraft({...draft,originalPrice:e.target.value})}/></label></div><select value={draft.category} onChange={e=>setDraft({...draft,category:e.target.value})}>{categories.slice(1,6).map(c=><option key={c}>{c}</option>)}</select><select value={draft.condition} onChange={e=>setDraft({...draft,condition:e.target.value})}>{conditions.slice(1).map(c=><option key={c}>{c}</option>)}</select><input placeholder="Material" value={draft.material} onChange={e=>setDraft({...draft,material:e.target.value})}/><input placeholder="Pengukuran" value={draft.measurements} onChange={e=>setDraft({...draft,measurements:e.target.value})}/><input placeholder="Lokasi" value={draft.location} onChange={e=>setDraft({...draft,location:e.target.value})}/><Button className="full">Simpan Produk</Button></form></div></div>}
   </div></ModalShell>
 }
-
 /* =========================================================
    ORDERS + STORE + CONFIRMATION
    ========================================================= */
@@ -517,6 +571,11 @@ function LogoutModal({onConfirm,onClose}) {
    APP
    ========================================================= */
 function App() {
+  useEffect(()=>{
+    window.__rewearReactStarted = true;
+    const shell = document.getElementById('preview-shell');
+    if(shell) shell.style.display = 'none';
+  },[]);
   const [products,setProducts]=useState([]);
   const [loading,setLoading]=useState(true);
   const [user,setUser]=useStored('rewear-user',null);
@@ -536,7 +595,12 @@ function App() {
   const [sellerAuth,setSellerAuth]=useState(false);
   const [toast,setToast]=useState('');
   const toastTimer=useRef(null);
-  const [editingProducts,setEditingProducts]=useState([]);
+  const [sellerProducts,setSellerProducts]=useStored(`rewear-seller-products-${accountKey}`,[]);
+  const [authNotice,setAuthNotice]=useState('');
+  const [pendingCheckout,setPendingCheckout]=useState(false);
+  const topRef=useRef(null);
+  const productsRef=useRef(null);
+  const flashRef=useRef(null);
   const [logoutConfirm,setLogoutConfirm]=useState(false);
 
   useEffect(()=>{let active=true;api.getProducts().then(data=>{if(active){setProducts(data);setLoading(false)}});return()=>{active=false}},[]);
@@ -549,14 +613,15 @@ function App() {
   },[]);
 
   const unread=useMemo(()=>rooms.reduce((n,r)=>n+r.messages.filter(m=>m.sender==='other'&&!m.read).length,0),[rooms]);
+  const allProducts=useMemo(()=>[...products,...sellerProducts],[products,sellerProducts]);
   const filtered=useMemo(()=>{
     const q=search.trim().toLowerCase();
-    return [...products,...editingProducts]
+    return allProducts
       .filter(p=>category==='Semua'||p.category===category)
       .filter(p=>condition==='Semua Kondisi'||p.condition===condition)
       .filter(p=>!q||`${p.brand} ${p.name} ${p.category} ${p.storeName}`.toLowerCase().includes(q))
       .sort((a,b)=>sort==='Harga Terendah'?a.price-b.price:sort==='Harga Tertinggi'?b.price-a.price:b.id-a.id);
-  },[products,editingProducts,category,condition,search,sort]);
+  },[allProducts,category,condition,search,sort]);
 
   const subtotal=cart.reduce((s,x)=>s+x.product.price*x.quantity,0);
   const cartCount=cart.reduce((s,x)=>s+x.quantity,0);
@@ -575,48 +640,61 @@ function App() {
   const toggleFavorite=id=>setFavorites(c=>c.includes(id)?c.filter(x=>x!==id):[...c,id]);
 
   const openAuth=(seller=false,mode='login')=>{setSellerAuth(seller);setAuthMode(mode);setModal('auth')};
-  const login=u=>{setUser(u);setModal(null);showToast(`Selamat datang, ${u.name}`)};
+  const login=u=>{
+    const guestCart=readStorage('rewear-cart-guest',[]);
+    const guestFavorites=readStorage('rewear-favorites-guest',[]);
+    const nextKey=u.email?.toLowerCase()||'guest';
+    const accountCart=readStorage(`rewear-cart-${nextKey}`,[]);
+    const accountFavorites=readStorage(`rewear-favorites-${nextKey}`,[]);
+    const mergedCart=[...accountCart];
+    guestCart.forEach(item=>{const existing=mergedCart.find(x=>x.product?.id===item.product?.id);if(!existing)mergedCart.push(item)});
+    const mergedFavorites=[...new Set([...accountFavorites,...guestFavorites])];
+    try{localStorage.setItem(`rewear-cart-${nextKey}`,JSON.stringify(mergedCart));localStorage.setItem(`rewear-favorites-${nextKey}`,JSON.stringify(mergedFavorites));localStorage.removeItem('rewear-cart-guest');localStorage.removeItem('rewear-favorites-guest')}catch{}
+    setUser(u);setAuthNotice('');setModal(pendingCheckout?'checkout':null);setPendingCheckout(false);showToast(`Selamat datang, ${u.name}`);
+  };
+  const startCheckout=()=>{ if(!cart.length){showToast('Keranjang masih kosong');return;} if(!user){setPendingCheckout(true);setAuthNotice('Silakan masuk atau daftar untuk menyelesaikan checkout.');setSellerAuth(false);setAuthMode('login');setModal('auth');return;} setAuthNotice('');setModal('checkout'); };
+  const saveSellerProduct=p=>setSellerProducts(current=>{const exists=current.some(x=>x.id===p.id);return exists?current.map(x=>x.id===p.id?p:x):[...current,p]});
   const placeOrder=({shipping,payment,address})=>{
     const order={id:`RW-${Date.now().toString().slice(-6)}`,date:new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}),items:cart,total:subtotal+shipping,status:'Diproses',address:address.detail,payment};
-    setOrders(o=>[order,...o]);setProducts(ps=>ps.map(p=>cart.some(i=>i.product.id===p.id)?{...p,stock:0,isSold:true,sold:p.sold+cart.find(i=>i.product.id===p.id).quantity}:p));setCart([]);setModal('confirmation');showToast('Pesanan berhasil dibuat');
+    setOrders(o=>[order,...o]);const purchasedIds=new Set(cart.map(i=>i.product.id));setProducts(ps=>ps.map(p=>purchasedIds.has(p.id)?{...p,stock:0,isSold:true,sold:p.sold+cart.find(i=>i.product.id===p.id).quantity}:p));setSellerProducts(ps=>ps.map(p=>purchasedIds.has(p.id)?{...p,stock:0,isSold:true,sold:p.sold+cart.find(i=>i.product.id===p.id).quantity}:p));setCart([]);setModal('confirmation');showToast('Pesanan berhasil dibuat');
   };
 
   const modalContent=()=>{
-    if(modal==='auth')return <AuthModal sellerMode={sellerAuth} setSellerMode={setSellerAuth} mode={authMode} setMode={setAuthMode} onClose={()=>setModal(null)} onLogin={login}/>;
+    if(modal==='auth')return <AuthModal sellerMode={sellerAuth} setSellerMode={setSellerAuth} mode={authMode} setMode={setAuthMode} onClose={()=>setModal(null)} onLogin={login} notice={authNotice}/>;
     if(modal==='product'&&selectedProduct)return <ProductModal product={selectedProduct} onClose={()=>setModal(null)} onAdd={addToCart} favorite={favorites.includes(selectedProduct.id)} onFavorite={toggleFavorite} onStore={name=>{setSelectedStore(name);setModal('store')}}/>;
-    if(modal==='cart')return <CartModal cart={cart} subtotal={subtotal} onChangeQty={changeQty} onRemove={removeCart} onCheckout={()=>setModal('checkout')} onClose={()=>setModal(null)}/>;
+    if(modal==='cart')return <CartModal cart={cart} subtotal={subtotal} onChangeQty={changeQty} onRemove={removeCart} onCheckout={startCheckout} onClose={()=>setModal(null)}/>;
     if(modal==='checkout')return <CheckoutPage cart={cart} subtotal={subtotal} onPlaceOrder={placeOrder} onBack={()=>setModal('cart')}/>;
     if(modal==='chat')return <ChatModal rooms={rooms} setRooms={setRooms} onClose={()=>setModal(null)} onRead={()=>{}}/>;
     if(modal==='orders')return <OrdersModal orders={orders} onClose={()=>setModal(null)}/>;
-    if(modal==='store'&&selectedStore)return <StoreModal name={selectedStore} products={products.filter(p=>p.storeName===selectedStore)} favorites={favorites} onFavorite={toggleFavorite} onAdd={addToCart} onClose={()=>setModal(null)} onOpenProduct={p=>{setSelectedProduct(p);setModal('product')}}/>;
-    if(modal==='seller')return <SellerDashboard products={products} user={user} onClose={()=>setModal(null)} onAddProduct={p=>setEditingProducts(x=>[...x,p])} onEditProduct={p=>{setSelectedProduct(p);showToast('Edit produk siap untuk demo')}}/>;
+    if(modal==='store'&&selectedStore)return <StoreModal name={selectedStore} products={allProducts.filter(p=>p.storeName===selectedStore)} favorites={favorites} onFavorite={toggleFavorite} onAdd={addToCart} onClose={()=>setModal(null)} onOpenProduct={p=>{setSelectedProduct(p);setModal('product')}}/>;
+    if(modal==='seller')return <SellerDashboard products={sellerProducts} user={user} onClose={()=>setModal(null)} onSaveProduct={saveSellerProduct}/>;
     if(modal==='confirmation')return <Confirmation orderId={orders[0]?.id||'RW-DEMO'} onOrders={()=>setModal('orders')} onClose={()=>setModal(null)}/>;
     if(modal==='logout')return <LogoutModal onClose={()=>setModal(null)} onConfirm={()=>{setUser(null);setModal(null);showToast('Kamu sudah keluar')}}/>;
     return null;
   };
 
-  return <div>
+  return <div ref={topRef}>
     <Header user={user} cartCount={cartCount} chatUnread={unread} search={search} setSearch={setSearch}
       onOpenCart={()=>setModal('cart')} onOpenChat={()=>setModal('chat')} onOpenAuth={openAuth}
-      onOpenOrders={()=>setModal('orders')} onOpenSeller={()=>user?setModal('seller'):openAuth(true,'login')}
+      onOpenOrders={()=>setModal('orders')} onNavigate={key=>{const target=key==='top'?topRef:key==='flash'?flashRef:productsRef;target.current?.scrollIntoView({behavior:'smooth',block:'start'})}} onOpenSeller={()=>user?setModal('seller'):openAuth(true,'login')}
       onLogout={()=>setModal('logout')}/>
-    <div className="announcement"><div className="container announcement-inner"><Icon name="Sparkles" size={15}/><b>GRATIS ONGKIR</b><span>Belanja preloved, hemat sampai 80%!</span><button onClick={()=>document.getElementById('products')?.scrollIntoView({behavior:'smooth'})}>Belanja Sekarang <Icon name="ArrowRight" size={13}/></button></div></div>
+    <div className="announcement"><div className="container announcement-inner"><Icon name="Sparkles" size={15}/><b>GRATIS ONGKIR</b><span>Belanja preloved, hemat sampai 80%!</span><button onClick={()=>productsRef.current?.scrollIntoView({behavior:'smooth',block:'start'})}>Belanja Sekarang <Icon name="ArrowRight" size={13}/></button></div></div>
 
     <main className="container page">
       <section className="category-bar"><div className="section-head" style={{marginBottom:0}}><strong>Kategori</strong><button className="store-link" onClick={()=>setCategory('Semua')}>Lihat Semua →</button></div><div className="category-list">{categories.map((x,i)=><button className={`category-pill ${category===x?'active':''}`} key={x} onClick={()=>setCategory(x)}><span>{['🛍️','👚','👗','🧥','👖','👜','👟','✨','🧒','🏃'][i]}</span>{x}</button>)}</div></section>
 
       <section className="hero" style={{backgroundImage:`linear-gradient(90deg,rgba(58,9,16,.9),rgba(74,20,32,.3)),url(${images.hero})`}}>
-        <div><span className="eyebrow blue">PRELOVED TERPERCAYA</span><h1>Fashion branded,<br/>harga bersahabat.</h1><p>Diskon hingga 80% dari harga asli</p><Button onClick={()=>document.getElementById('products')?.scrollIntoView({behavior:'smooth'})}>Lihat Semua <Icon name="ArrowRight" size={15}/></Button></div>
+        <div><span className="eyebrow blue">PRELOVED TERPERCAYA</span><h1>Fashion branded,<br/>harga bersahabat.</h1><p>Diskon hingga 80% dari harga asli</p><Button onClick={()=>productsRef.current?.scrollIntoView({behavior:'smooth',block:'start'})}>Lihat Semua <Icon name="ArrowRight" size={15}/></Button></div>
       </section>
 
-      <section className="section flash" id="flash-sale">
-        <div className="section-head"><div><h2>⚡ Flash Sale</h2><p className="muted">Harga spesial untuk item pilihan · stok sangat terbatas</p></div><div className="countdown"><span>Berakhir dalam</span><span className="timebox">05</span>:<span className="timebox">32</span>:<span className="timebox">18</span></div></div>
+      <section className="section flash" id="flash-sale" ref={flashRef}>
+        <div className="section-head"><div><h2>⚡ Flash Sale</h2><p className="muted">Harga spesial untuk item pilihan · stok sangat terbatas</p></div><Countdown/></div>
         {loading?<SkeletonGrid/>:<div className="grid">{products.filter(p=>p.isFlashSale).map(p=><ProductCard key={p.id} product={p} flash favorite={favorites.includes(p.id)} onFavorite={toggleFavorite} onAdd={addToCart} onOpen={x=>{setSelectedProduct(x);setModal('product')}} onStore={x=>{setSelectedStore(x);setModal('store')}}/>)}</div>}
       </section>
 
       <section className="trust"><div className="trust-item"><span className="trust-icon"><Icon name="Leaf"/></span><span><b>Eco-Conscious</b><br/><small>Belanja lebih berkelanjutan</small></span></div><div className="trust-item"><span className="trust-icon"><Icon name="BadgeCheck"/></span><span><b>Item dicek tim kami</b><br/><small>Kondisi diverifikasi</small></span></div><div className="trust-item"><span className="trust-icon"><Icon name="Eye"/></span><span><b>12.400+ item dilihat</b><br/><small>Marketplace aktif</small></span></div><div className="trust-item"><span className="trust-icon"><Icon name="RotateCcw"/></span><span><b>Retur 14 hari</b><br/><small>Sesuai kebijakan toko</small></span></div></section>
 
-      <section className="section" id="products">
+      <section className="section" id="products" ref={productsRef}>
         <div className="section-head"><div><h2>Semua Produk</h2><p className="muted">{loading?'Memuat produk…':`${filtered.length} produk ditemukan`} · Dikirim ke <b>Jakarta Selatan</b></p></div><select value={sort} onChange={e=>setSort(e.target.value)} style={{border:'1px solid var(--line)',borderRadius:8,padding:'9px 12px',background:'#fff'}}><option>Terbaru</option><option>Harga Terendah</option><option>Harga Tertinggi</option></select></div>
         <div className="category-list" style={{marginBottom:16}}>{conditions.map(x=><button className={`condition-pill ${condition===x?'active':''}`} key={x} onClick={()=>setCondition(x)}>{x}</button>)}</div>
         {loading?<SkeletonGrid/>:filtered.length===0?<div className="empty" style={{background:'#fff',border:'1px solid var(--line)',borderRadius:16}}><Icon name="SearchX" size={45}/><h2>Produk tidak ditemukan</h2><p>Coba kata kunci, kategori, atau kondisi yang berbeda.</p><Button variant="secondary" onClick={()=>{setSearch('');setCategory('Semua');setCondition('Semua Kondisi')}}>Reset Pencarian</Button></div>:<div className="grid">{filtered.map(p=><ProductCard key={p.id} product={p} favorite={favorites.includes(p.id)} onFavorite={toggleFavorite} onAdd={addToCart} onOpen={x=>{setSelectedProduct(x);setModal('product')}} onStore={x=>{setSelectedStore(x);setModal('store')}}/>)}</div>}
@@ -630,7 +708,8 @@ function App() {
   </div>
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
 </script>
 </body>
 </html>
